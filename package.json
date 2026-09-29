@@ -1,0 +1,23 @@
+{
+  "name": "insuredmine-assessment",
+  "version": "1.0.0",
+  "description": "Node.js assessment server for InsuredMine",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "csv-parse": "^7.0.3",
+    "dotenv": "^18.0.4",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "mongoose": "^9.10.2",
+    "multer": "^2.4.0"
+  }
+}
