@@ -1,0 +1,20 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: insuredmine-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - insuredmine_mongo:/data/db
+
+  redis:
+    image: redis:7
+    container_name: insuredmine-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - insuredmine_redis:/data
+
+volumes:
+  insuredmine_mongo:
+  insuredmine_redis:
