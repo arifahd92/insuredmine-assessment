@@ -4,35 +4,28 @@ import { parentPort, workerData } from "node:worker_threads";
 import { parse } from "csv-parse/sync";
 import ExcelJS from "exceljs";
 
-const rows = await readRows(workerData.filePath);
+const sheetRows = await readRows(workerData.filePath);
 
-const agents = new Set();
-const users = new Set();
-const accounts = new Set();
-const categories = new Set();
-const carriers = new Set();
-const policies = new Set();
+const rows = sheetRows.map((row) => ({
+  agentName: text(row.agent),
+  firstName: text(row.firstname),
+  dob: text(row.dob),
+  address: text(row.address),
+  phone: text(row.phone),
+  state: text(row.state),
+  zip: text(row.zip),
+  email: text(row.email).toLowerCase(),
+  gender: text(row.gender),
+  userType: text(row.userType),
+  accountName: text(row.account_name),
+  categoryName: text(row.category_name),
+  companyName: text(row.company_name),
+  policyNumber: text(row.policy_number),
+  policyStartDate: text(row.policy_start_date),
+  policyEndDate: text(row.policy_end_date),
+}));
 
-for (const row of rows) {
-  addValue(agents, row.agent);
-  addValue(users, row.firstname);
-  addValue(accounts, row.account_name);
-  addValue(categories, row.category_name);
-  addValue(carriers, row.company_name);
-  addValue(policies, row.policy_number);
-}
-
-parentPort.postMessage({
-  rowCount: rows.length,
-  counts: {
-    agents: agents.size,
-    users: users.size,
-    accounts: accounts.size,
-    categories: categories.size,
-    carriers: carriers.size,
-    policies: policies.size,
-  },
-});
+parentPort.postMessage({ rows });
 
 async function readRows(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -115,10 +108,6 @@ function cellToText(value) {
   return String(value);
 }
 
-function addValue(bucket, value) {
-  const text = String(value ?? "").trim();
-
-  if (text) {
-    bucket.add(text);
-  }
+function text(value) {
+  return String(value ?? "").trim();
 }

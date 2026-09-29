@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { Worker } from "node:worker_threads";
 import { AppError } from "../errors/AppError.js";
+import { importRows } from "../services/importSheet.js";
 
 export async function uploadSheet(req, res) {
   if (!req.file) {
@@ -9,13 +10,16 @@ export async function uploadSheet(req, res) {
 
   try {
     const result = await runParser(req.file.path);
+    const summary = await importRows(result.rows);
 
     res.json({
       success: true,
-      message: "File read. Nothing was saved to the database.",
+      message: "File saved to the database.",
       fileName: req.file.originalname,
-      rowCount: result.rowCount,
-      counts: result.counts,
+      rowCount: result.rows.length,
+      new: summary.new,
+      duplicates: summary.duplicates,
+      failed: summary.failed,
     });
   } finally {
     await fs.unlink(req.file.path).catch(() => {});
@@ -40,7 +44,7 @@ function runParser(filePath) {
     }
 
     worker.on("message", (result) => {
-      if (!result || typeof result !== "object" || !("rowCount" in result)) {
+      if (!result || !Array.isArray(result.rows)) {
         return;
       }
 
