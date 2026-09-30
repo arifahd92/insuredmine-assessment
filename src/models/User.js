@@ -5,7 +5,6 @@ const userSchema = new mongoose.Schema(
     firstName: {
       type: String,
       required: [true, "First name is required"],
-      unique: true,
       trim: true,
     },
     dob: {
@@ -50,6 +49,17 @@ const userSchema = new mongoose.Schema(
     },
   },
   { timestamps: true, collection: "users" }
+);
+
+export const firstNameCollation = { locale: "en", strength: 2 };
+
+userSchema.index(
+  { firstName: 1 },
+  {
+    name: "firstName_case_insensitive",
+    unique: true,
+    collation: firstNameCollation,
+  }
 );
 
 export default mongoose.model("User", userSchema);

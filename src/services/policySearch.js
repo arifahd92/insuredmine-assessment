@@ -1,11 +1,18 @@
 import { AppError } from "../errors/AppError.js";
-import User from "../models/User.js";
+import User, { firstNameCollation } from "../models/User.js";
+
+let firstNameIndexReady = false;
 
 export async function searchPoliciesByFirstName(username) {
   const firstName = username.trim();
 
   if (!firstName) {
     throw new AppError("Username is required", 400);
+  }
+
+  if (!firstNameIndexReady) {
+    await User.syncIndexes();
+    firstNameIndexReady = true;
   }
 
   const [user] = await User.aggregate([
@@ -57,7 +64,7 @@ export async function searchPoliciesByFirstName(username) {
         policies: 1,
       },
     },
-  ]);
+  ]).collation(firstNameCollation);
 
   if (!user) {
     throw new AppError("No user found with that first name", 404);

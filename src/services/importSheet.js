@@ -2,7 +2,7 @@ import Agent from "../models/Agent.js";
 import Carrier from "../models/Carrier.js";
 import Lob from "../models/Lob.js";
 import Policy from "../models/Policy.js";
-import User from "../models/User.js";
+import User, { firstNameCollation } from "../models/User.js";
 import UserAccount from "../models/UserAccount.js";
 
 const BATCH_SIZE = 500;
@@ -30,7 +30,7 @@ async function ensureIndexes() {
 
   await Promise.all([
     Agent.init(),
-    User.init(),
+    User.syncIndexes(),
     UserAccount.init(),
     Lob.init(),
     Carrier.init(),
@@ -105,7 +105,7 @@ async function importBatch(rows) {
   const policies = [];
 
   for (const row of validRows) {
-    const userId = userIds.get(row.firstName);
+    const userId = userIds.get(identityKey("firstName", row.firstName));
     const companyId = carrierIds.get(row.companyName);
     const policyCategoryId = categoryIds.get(row.categoryName);
 
@@ -183,12 +183,22 @@ function parseDate(value) {
   return date;
 }
 
+function identityKey(field, value) {
+  if (field === "firstName") {
+    return String(value).toLowerCase();
+  }
+
+  return value;
+}
+
 function uniqueDocs(rows, field, build) {
   const docs = new Map();
 
   for (const row of rows) {
-    if (!docs.has(row[field])) {
-      docs.set(row[field], build(row));
+    const key = identityKey(field, row[field]);
+
+    if (!docs.has(key)) {
+      docs.set(key, build(row));
     }
   }
 
@@ -198,7 +208,7 @@ function uniqueDocs(rows, field, build) {
 async function saveMasters(Model, field, docs) {
   const names = docs.map((doc) => doc[field]);
   const existing = await loadIdMap(Model, field, names);
-  const missing = docs.filter((doc) => !existing.has(doc[field]));
+  const missing = docs.filter((doc) => !existing.has(identityKey(field, doc[field])));
   await upsertMissing(Model, field, missing);
   return loadIdMap(Model, field, names);
 }
@@ -208,11 +218,17 @@ async function loadIdMap(Model, field, names) {
     return new Map();
   }
 
-  const docs = await Model.find({ [field]: { $in: names } })
+  let query = Model.find({ [field]: { $in: names } })
     .select(`_id ${field}`)
     .lean();
 
-  return new Map(docs.map((doc) => [doc[field], doc._id]));
+  if (field === "firstName") {
+    query = query.collation(firstNameCollation);
+  }
+
+  const docs = await query;
+
+  return new Map(docs.map((doc) => [identityKey(field, doc[field]), doc._id]));
 }
 
 async function upsertMissing(Model, field, docs) {
@@ -228,8 +244,14 @@ async function upsertMissing(Model, field, docs) {
     },
   }));
 
+  const options = { ordered: false };
+
+  if (field === "firstName") {
+    options.collation = firstNameCollation;
+  }
+
   try {
-    await Model.bulkWrite(operations, { ordered: false });
+    await Model.bulkWrite(operations, options);
   } catch (error) {
     if (!isBulkWriteError(error)) {
       throw error;
