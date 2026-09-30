@@ -3,6 +3,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { notFound } from "./middleware/notFound.js";
 import uploadRoutes from "./routes/upload.routes.js";
 import policyRoutes from "./routes/policy.routes.js";
+import messageRoutes from "./routes/message.routes.js";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/upload", uploadRoutes);
 app.use("/api/policies", policyRoutes);
+app.use("/api/messages", messageRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
