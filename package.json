@@ -6,7 +6,10 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "pm2:start": "node startPm2.js",
+    "pm2:logs": "pm2 logs insuredmine",
+    "pm2:stop": "pm2 stop insuredmine"
   },
   "engines": {
     "node": ">=18"
@@ -19,5 +22,8 @@
     "express": "^5.2.1",
     "mongoose": "^9.10.2",
     "multer": "^2.4.0"
+  },
+  "devDependencies": {
+    "pm2": "^7.0.4"
   }
 }
