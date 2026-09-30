@@ -18,6 +18,34 @@ export async function searchPoliciesByFirstName(username) {
   const [user] = await User.aggregate([
     { $match: { firstName } },
     { $limit: 1 },
+    ...policiesByUserStages(),
+  ]).collation(firstNameCollation);
+
+  if (!user) {
+    throw new AppError("No user found with that first name", 404);
+  }
+
+  return user;
+}
+
+export async function aggregatePoliciesByUser(page, limit) {
+  const skip = (page - 1) * limit;
+
+  const [total, users] = await Promise.all([
+    User.countDocuments(),
+    User.aggregate([
+      { $sort: { firstName: 1 } },
+      { $skip: skip },
+      { $limit: limit },
+      ...policiesByUserStages(),
+    ]).collation(firstNameCollation),
+  ]);
+
+  return { page, limit, total, users };
+}
+
+function policiesByUserStages() {
+  return [
     {
       $lookup: {
         from: "policies",
@@ -64,11 +92,5 @@ export async function searchPoliciesByFirstName(username) {
         policies: 1,
       },
     },
-  ]).collation(firstNameCollation);
-
-  if (!user) {
-    throw new AppError("No user found with that first name", 404);
-  }
-
-  return user;
+  ];
 }
